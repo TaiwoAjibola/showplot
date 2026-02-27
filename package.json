@@ -16,7 +16,10 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "preview:admin": "vite preview --config vite.admin.config.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "vercel:login": "npx vercel login",
+    "deploy:user": "npx vercel link --yes && npx vercel --prod --local-config vercel.user.json",
+    "deploy:admin": "npx vercel link --yes && npx vercel --prod --local-config vercel.admin.json"
   },
   "dependencies": {
     "@react-oauth/google": "^0.13.4",

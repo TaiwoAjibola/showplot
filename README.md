@@ -99,6 +99,40 @@ Create a second Vercel project pointing to the same repo, with:
 	- `VITE_GOOGLE_CLIENT_ID`
 	- `BACKEND_ORIGIN`
 
+### Deploy using Vercel CLI (2 projects)
+
+This repo includes two Vercel config files so each project can have different build/output settings:
+
+- `vercel.user.json` (builds `dist/`)
+- `vercel.admin.json` (builds `dist-admin/`)
+
+1) Login:
+
+`npm run vercel:login`
+
+2) Deploy User app:
+
+`npm run deploy:user`
+
+During `vercel link`, choose/create the **User** Vercel project.
+
+3) Deploy Admin app:
+
+`npm run deploy:admin`
+
+During `vercel link`, choose/create the **Admin** Vercel project.
+
+4) Set env vars for each project (run after linking to that project):
+
+- `VITE_GOOGLE_CLIENT_ID`
+- `BACKEND_ORIGIN`
+
+Example:
+
+`npx vercel env add BACKEND_ORIGIN production`
+
+Paste your backend base URL when prompted.
+
 ### Notes
 
 - This repo includes a Vercel Serverless Function at `api/[...path].js` which proxies `/api/*` to your backend using `BACKEND_ORIGIN`.
