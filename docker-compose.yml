@@ -1,0 +1,11 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: showplot-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - showplot_mongo_data:/data/db
+
+volumes:
+  showplot_mongo_data:

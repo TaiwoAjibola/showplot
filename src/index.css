@@ -1,0 +1,141 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300,0,0');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .sp-toolbar {
+    @apply h-16 px-6 flex items-center border-b border-slate-200 bg-white/80;
+    @apply sticky top-0 z-50;
+    @apply supports-[backdrop-filter]:bg-white/60 supports-[backdrop-filter]:backdrop-blur;
+  }
+
+  .sp-toolbar-nav {
+    @apply w-full flex items-center gap-4;
+  }
+
+  .sp-toolbar-left {
+    @apply flex items-center gap-3 flex-shrink-0 min-w-0;
+  }
+
+  .sp-brand-mark {
+    @apply h-9 w-9 rounded-xl bg-slate-900 text-white flex items-center justify-center;
+  }
+
+  .sp-brand-text {
+    @apply leading-tight min-w-0;
+  }
+
+  .sp-brand-title {
+    @apply text-sm font-semibold tracking-tight text-slate-900;
+  }
+
+  .sp-brand-subtitle {
+    @apply text-xs text-slate-500;
+  }
+
+  .sp-toolbar-center {
+    @apply flex-1 min-w-0 flex items-center;
+  }
+
+  .sp-flow {
+    @apply w-full min-w-0 flex items-center justify-center gap-3;
+  }
+
+  .sp-group {
+    @apply h-11 rounded-xl border border-slate-200 bg-white px-1;
+    @apply flex items-center gap-1;
+    @apply focus-within:border-slate-400 focus-within:ring-2 focus-within:ring-slate-200;
+  }
+
+  .sp-field-input {
+    @apply h-10 flex-1 min-w-0 bg-transparent px-3 text-sm text-slate-900 outline-none;
+    @apply placeholder:text-slate-400;
+  }
+
+  .sp-field-select {
+    @apply h-10 w-40 sm:w-48 md:w-56 flex-shrink-0 bg-transparent px-3 text-sm text-slate-900 outline-none;
+  }
+
+  .sp-toolbar-right {
+    @apply flex-shrink-0;
+  }
+
+  .sp-actions {
+    @apply flex items-center gap-2;
+  }
+
+  .sp-btn-ghost {
+    @apply h-10 rounded-lg px-3 text-sm font-semibold text-slate-700;
+    @apply inline-flex items-center justify-center gap-2 leading-none;
+    @apply hover:bg-slate-100 active:bg-slate-200;
+    @apply disabled:text-slate-400 disabled:hover:bg-transparent disabled:active:bg-transparent;
+  }
+
+  .sp-btn-export {
+    @apply h-10 rounded-lg border border-slate-200 bg-slate-100 px-4 text-sm font-semibold text-slate-800;
+    @apply inline-flex items-center justify-center gap-2 leading-none;
+    @apply hover:bg-slate-200 active:bg-slate-200;
+    @apply disabled:bg-slate-100 disabled:text-slate-400;
+  }
+
+  .sp-btn-secondary {
+    @apply h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-900;
+    @apply inline-flex items-center justify-center gap-2 leading-none;
+    @apply hover:bg-slate-50;
+    @apply disabled:border-slate-200 disabled:text-slate-400 disabled:hover:bg-white;
+  }
+
+  .sp-btn-reset {
+    @apply h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700;
+    @apply inline-flex items-center justify-center gap-2 leading-none;
+    @apply hover:bg-slate-50;
+  }
+
+  .sp-btn-primary {
+    @apply h-10 rounded-lg bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm;
+    @apply inline-flex items-center justify-center gap-2 leading-none;
+    @apply hover:bg-slate-800;
+    @apply disabled:bg-slate-200 disabled:text-slate-500;
+  }
+
+  .sp-divider {
+    @apply mx-1 h-6 w-px bg-slate-200;
+  }
+
+  .sp-icon-btn {
+    @apply h-10 w-10 rounded-full border border-slate-200 bg-white text-slate-700;
+    @apply hover:bg-slate-50;
+    @apply inline-flex items-center justify-center leading-none;
+  }
+}
+
+:root {
+  font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
+    Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji';
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html,
+body {
+  height: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+  width: 100%;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+
