@@ -18,8 +18,13 @@
     "preview:admin": "vite preview --config vite.admin.config.js",
     "start": "node server.js",
     "vercel:login": "npx vercel login",
-    "deploy:user": "npx vercel link --yes && npx vercel --prod --local-config vercel.user.json",
-    "deploy:admin": "npx vercel link --yes && npx vercel --prod --local-config vercel.admin.json"
+    "vercel:link": "npx vercel link",
+    "vercel:store:user": "node scripts/vercel-sync.mjs store user",
+    "vercel:store:admin": "node scripts/vercel-sync.mjs store admin",
+    "vercel:use:user": "node scripts/vercel-sync.mjs use user",
+    "vercel:use:admin": "node scripts/vercel-sync.mjs use admin",
+    "deploy:user": "npm run vercel:use:user && npx vercel --prod --local-config vercel.user.json",
+    "deploy:admin": "npm run vercel:use:admin && npx vercel --prod --local-config vercel.admin.json"
   },
   "dependencies": {
     "@react-oauth/google": "^0.13.4",

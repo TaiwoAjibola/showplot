@@ -24,6 +24,8 @@ dist-ssr
 .idea
 .DS_Store
 .vercel
+.vercel.user
+.vercel.admin
 *.suo
 *.ntvs*
 *.njsproj

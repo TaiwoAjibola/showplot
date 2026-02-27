@@ -110,19 +110,33 @@ This repo includes two Vercel config files so each project can have different bu
 
 `npm run vercel:login`
 
-2) Deploy User app:
+2) One-time setup: link + store each project
+
+Link and pick/create the **User** project:
+
+`npm run vercel:link`
+
+Store the link as `.vercel.user/`:
+
+`npm run vercel:store:user`
+
+Now link and pick/create the **Admin** project:
+
+`npm run vercel:link`
+
+Store the link as `.vercel.admin/`:
+
+`npm run vercel:store:admin`
+
+3) Deploy User app:
 
 `npm run deploy:user`
 
-During `vercel link`, choose/create the **User** Vercel project.
-
-3) Deploy Admin app:
+4) Deploy Admin app:
 
 `npm run deploy:admin`
 
-During `vercel link`, choose/create the **Admin** Vercel project.
-
-4) Set env vars for each project (run after linking to that project):
+5) Set env vars for each project (run after activating that project):
 
 - `VITE_GOOGLE_CLIENT_ID`
 - `BACKEND_ORIGIN`
