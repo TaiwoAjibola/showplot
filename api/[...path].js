@@ -22,7 +22,7 @@ function isHopByHopHeader(name) {
   )
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   const backendOrigin = String(process.env.BACKEND_ORIGIN || '').trim().replace(/\/+$/, '')
   if (!backendOrigin) {
     res.statusCode = 500
