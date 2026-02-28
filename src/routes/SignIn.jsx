@@ -32,7 +32,6 @@ export default function SignIn({ title = 'Sign in', subtitle = 'Use Google to co
             }
           }}
           onError={() => setLocalError('Google sign-in failed. Please try again.')}
-          useOneTap
         />
       </div>
 
