@@ -1,11 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 const API = {
+  _readError: async (res, fallback) => {
+    const ct = res.headers?.get?.('content-type') || ''
+    if (ct.includes('application/json')) {
+      const body = await res.json().catch(() => null)
+      return body?.error || fallback
+    }
+    const text = await res.text().catch(() => '')
+    const hint = text && text.trim().startsWith('<')
+      ? ' (received HTML — check Vercel /api proxy + BACKEND_ORIGIN)'
+      : ''
+    return `${fallback}${hint}`
+  },
   listAssets: async () => {
     const res = await fetch('/api/admin/assets')
     if (!res.ok) {
-      const body = await res.json().catch(() => null)
-      throw new Error(body?.error || 'Failed to load assets')
+      throw new Error(await API._readError(res, 'Failed to load assets'))
     }
     return res.json()
   },
@@ -15,16 +26,14 @@ const API = {
       body: formData,
     })
     if (!res.ok) {
-      const body = await res.json().catch(() => null)
-      throw new Error(body?.error || 'Upload failed')
+      throw new Error(await API._readError(res, 'Upload failed'))
     }
     return res.json()
   },
   deleteAsset: async (assetId) => {
     const res = await fetch(`/api/admin/assets/${assetId}`, { method: 'DELETE' })
     if (!res.ok) {
-      const body = await res.json().catch(() => null)
-      throw new Error(body?.error || 'Delete failed')
+      throw new Error(await API._readError(res, 'Delete failed'))
     }
     return res.json()
   },
@@ -35,24 +44,21 @@ const API = {
       body: JSON.stringify(patch),
     })
     if (!res.ok) {
-      const body = await res.json().catch(() => null)
-      throw new Error(body?.error || 'Update failed')
+      throw new Error(await API._readError(res, 'Update failed'))
     }
     return res.json()
   },
   stats: async () => {
     const res = await fetch('/api/admin/stats')
     if (!res.ok) {
-      const body = await res.json().catch(() => null)
-      throw new Error(body?.error || 'Failed to load stats')
+      throw new Error(await API._readError(res, 'Failed to load stats'))
     }
     return res.json()
   },
   getTaxonomy: async () => {
     const res = await fetch('/api/admin/taxonomy')
     if (!res.ok) {
-      const body = await res.json().catch(() => null)
-      throw new Error(body?.error || 'Failed to load taxonomy')
+      throw new Error(await API._readError(res, 'Failed to load taxonomy'))
     }
     return res.json()
   },
@@ -63,8 +69,7 @@ const API = {
       body: JSON.stringify({ name }),
     })
     if (!res.ok) {
-      const body = await res.json().catch(() => null)
-      throw new Error(body?.error || 'Failed to create category')
+      throw new Error(await API._readError(res, 'Failed to create category'))
     }
     return res.json()
   },
@@ -75,8 +80,7 @@ const API = {
       body: JSON.stringify({ category, name }),
     })
     if (!res.ok) {
-      const body = await res.json().catch(() => null)
-      throw new Error(body?.error || 'Failed to create section')
+      throw new Error(await API._readError(res, 'Failed to create section'))
     }
     return res.json()
   },
