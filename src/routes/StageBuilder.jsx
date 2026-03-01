@@ -7,8 +7,6 @@ import { useAuth } from '../auth/authContext.js'
 import SignIn from './SignIn.jsx'
 import afrimaChannelListCsvUrl from '../assets/AFRIMA AWARD 2026 - Sheet1 (1).csv?url'
 
-const STAGE_ASPECT = 900 / 520
-
 function parseCsvLine(line) {
   const out = []
   let cur = ''
@@ -469,16 +467,8 @@ export default function StageBuilder() {
       const wrapW = Math.max(1, Math.floor(el.clientWidth))
       const wrapH = Math.max(1, Math.floor(el.clientHeight))
 
-      // Fit the stage to the wrapper while keeping a fixed aspect ratio.
-      // On phones, this keeps the canvas from becoming awkwardly tall.
-      let width = wrapW
-      let height = Math.floor(wrapW / STAGE_ASPECT)
-      if (height > wrapH) {
-        height = wrapH
-        width = Math.floor(wrapH * STAGE_ASPECT)
-      }
-
-      setStageSize({ width: Math.max(1, width), height: Math.max(1, height) })
+      // Always fill the wrapper.
+      setStageSize({ width: wrapW, height: wrapH })
       setHasMeasuredStage(true)
 
       if (debugSizeEnabled) {
@@ -508,22 +498,12 @@ export default function StageBuilder() {
     const paddingRight = Number.parseFloat(style.paddingRight || '0') || 0
     const paddingTop = Number.parseFloat(style.paddingTop || '0') || 0
     const paddingBottom = Number.parseFloat(style.paddingBottom || '0') || 0
-    const outerLeft = rect.left + paddingLeft
-    const outerTop = rect.top + paddingTop
-    const outerRight = rect.right - paddingRight
-    const outerBottom = rect.bottom - paddingBottom
-
-    const outerW = Math.max(1, outerRight - outerLeft)
-    const outerH = Math.max(1, outerBottom - outerTop)
-    const offsetX = Math.max(0, Math.floor((outerW - stageSize.width) / 2))
-    const offsetY = Math.max(0, Math.floor((outerH - stageSize.height) / 2))
-
-    const left = outerLeft + offsetX
-    const top = outerTop + offsetY
-    const right = left + stageSize.width
-    const bottom = top + stageSize.height
+    const left = rect.left + paddingLeft
+    const top = rect.top + paddingTop
+    const right = rect.right - paddingRight
+    const bottom = rect.bottom - paddingBottom
     return { left, top, right, bottom }
-  }, [stageWrapEl, stageSize.width, stageSize.height])
+  }, [stageWrapEl])
 
   useEffect(() => {
     const transformer = transformerRef.current
@@ -1278,7 +1258,7 @@ export default function StageBuilder() {
             onDrop={onDrop}
             className="relative w-full flex-1 min-h-0 rounded-xl border border-slate-200 bg-white overflow-hidden touch-none select-none"
           >
-            <div className="absolute inset-0 flex items-center justify-center">
+            <div className="absolute inset-0">
             <Stage
               ref={stageRef}
               width={stageSize.width}
