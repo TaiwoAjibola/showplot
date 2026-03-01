@@ -7,6 +7,8 @@ import { useAuth } from '../auth/authContext.js'
 import SignIn from './SignIn.jsx'
 import afrimaChannelListCsvUrl from '../assets/AFRIMA AWARD 2026 - Sheet1 (1).csv?url'
 
+const STAGE_ASPECT = 900 / 520
+
 function parseCsvLine(line) {
   const out = []
   let cur = ''
@@ -286,6 +288,7 @@ export default function StageBuilder() {
   const [savedPlots, setSavedPlots] = useState([])
 
   const [stageSize, setStageSize] = useState({ width: 900, height: 520 })
+  const [hasMeasuredStage, setHasMeasuredStage] = useState(false)
   const [stageWrapDebug, setStageWrapDebug] = useState({
     w: 0,
     h: 0,
@@ -294,8 +297,10 @@ export default function StageBuilder() {
     updates: 0,
   })
   const [isSheetOpen, setIsSheetOpen] = useState(false)
+  const [isListOpen, setIsListOpen] = useState(false)
   const [error, setError] = useState('')
   const [isBusy, setIsBusy] = useState(false)
+  const [isAssetsLoading, setIsAssetsLoading] = useState(false)
 
   const mobileDragRef = useRef(null)
   const [mobileDragPreview, setMobileDragPreview] = useState(null)
@@ -311,9 +316,24 @@ export default function StageBuilder() {
   }, [nodes, selectedId])
 
   useEffect(() => {
+    let alive = true
+    setIsAssetsLoading(true)
     API.listAssets()
-      .then(setAssets)
-      .catch((e) => setError(String(e?.message || e)))
+      .then((list) => {
+        if (!alive) return
+        setAssets(Array.isArray(list) ? list : [])
+      })
+      .catch((e) => {
+        if (!alive) return
+        setError(String(e?.message || e))
+      })
+      .finally(() => {
+        if (!alive) return
+        setIsAssetsLoading(false)
+      })
+    return () => {
+      alive = false
+    }
   }, [])
 
   useEffect(() => {
@@ -446,15 +466,26 @@ export default function StageBuilder() {
     const update = () => {
       // el is the measurement div — its size is purely CSS-driven (flex/grid),
       // NOT influenced by the Stage, because the Stage is position:absolute inside it.
-      const width = Math.max(1, Math.floor(el.clientWidth))
-      const height = Math.max(1, Math.floor(el.clientHeight))
-      setStageSize({ width, height })
+      const wrapW = Math.max(1, Math.floor(el.clientWidth))
+      const wrapH = Math.max(1, Math.floor(el.clientHeight))
+
+      // Fit the stage to the wrapper while keeping a fixed aspect ratio.
+      // On phones, this keeps the canvas from becoming awkwardly tall.
+      let width = wrapW
+      let height = Math.floor(wrapW / STAGE_ASPECT)
+      if (height > wrapH) {
+        height = wrapH
+        width = Math.floor(wrapH * STAGE_ASPECT)
+      }
+
+      setStageSize({ width: Math.max(1, width), height: Math.max(1, height) })
+      setHasMeasuredStage(true)
 
       if (debugSizeEnabled) {
         const rect = el.getBoundingClientRect()
         setStageWrapDebug((prev) => ({
-          w: width,
-          h: height,
+          w: wrapW,
+          h: wrapH,
           rectW: Math.round(rect.width),
           rectH: Math.round(rect.height),
           updates: prev.updates + 1,
@@ -477,12 +508,22 @@ export default function StageBuilder() {
     const paddingRight = Number.parseFloat(style.paddingRight || '0') || 0
     const paddingTop = Number.parseFloat(style.paddingTop || '0') || 0
     const paddingBottom = Number.parseFloat(style.paddingBottom || '0') || 0
-    const left = rect.left + paddingLeft
-    const top = rect.top + paddingTop
-    const right = rect.right - paddingRight
-    const bottom = rect.bottom - paddingBottom
+    const outerLeft = rect.left + paddingLeft
+    const outerTop = rect.top + paddingTop
+    const outerRight = rect.right - paddingRight
+    const outerBottom = rect.bottom - paddingBottom
+
+    const outerW = Math.max(1, outerRight - outerLeft)
+    const outerH = Math.max(1, outerBottom - outerTop)
+    const offsetX = Math.max(0, Math.floor((outerW - stageSize.width) / 2))
+    const offsetY = Math.max(0, Math.floor((outerH - stageSize.height) / 2))
+
+    const left = outerLeft + offsetX
+    const top = outerTop + offsetY
+    const right = left + stageSize.width
+    const bottom = top + stageSize.height
     return { left, top, right, bottom }
-  }, [stageWrapEl])
+  }, [stageWrapEl, stageSize.width, stageSize.height])
 
   useEffect(() => {
     const transformer = transformerRef.current
@@ -1214,9 +1255,16 @@ export default function StageBuilder() {
             ) : null}
 
             <div className="mt-4 grid grid-cols-2 gap-3">
-              {activeSectionItems.map((a) => (
-                <LibraryItem key={a._id} asset={a} />
-              ))}
+              {isAssetsLoading
+                ? Array.from({ length: 10 }).map((_, idx) => (
+                    <div
+                      key={`asset-skel-${idx}`}
+                      className="h-[92px] rounded-xl border border-slate-200 bg-slate-50 animate-pulse"
+                    />
+                  ))
+                : activeSectionItems.map((a) => (
+                    <LibraryItem key={a._id} asset={a} />
+                  ))}
             </div>
           </div>
 
@@ -1228,9 +1276,9 @@ export default function StageBuilder() {
             ref={stageWrapRef}
             onDragOver={(e) => e.preventDefault()}
             onDrop={onDrop}
-            className="relative w-full flex-1 min-h-0 rounded-xl border border-slate-200 bg-white overflow-hidden"
+            className="relative w-full flex-1 min-h-0 rounded-xl border border-slate-200 bg-white overflow-hidden touch-none select-none"
           >
-            <div className="absolute inset-0">
+            <div className="absolute inset-0 flex items-center justify-center">
             <Stage
               ref={stageRef}
               width={stageSize.width}
@@ -1329,6 +1377,12 @@ export default function StageBuilder() {
             </Stage>
             </div>
 
+            {!hasMeasuredStage ? (
+              <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/70">
+                <div className="h-10 w-10 animate-spin rounded-full border-2 border-slate-200 border-t-slate-900" />
+              </div>
+            ) : null}
+
             {debugSizeEnabled ? (
               <div className="pointer-events-none absolute left-2 top-2 z-50 rounded-lg border border-slate-200 bg-white/90 px-2 py-1 text-[11px] font-medium text-slate-700">
                 <div>wrap: {stageWrapDebug.w}×{stageWrapDebug.h}</div>
@@ -1344,31 +1398,89 @@ export default function StageBuilder() {
               {error}
             </div>
           ) : null}
+
+          {/* Desktop channel list table */}
+          <div className="hidden md:block mt-4 rounded-xl border border-slate-200 bg-white p-4">
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-semibold text-slate-900">Channel List</div>
+              <div className="text-xs text-slate-500">{visualInputRows.length} items</div>
+            </div>
+            <div className="mt-3 overflow-auto max-h-[40vh] rounded-lg border border-slate-200">
+              <table className="w-full border-collapse text-sm">
+                <thead className="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+                  <tr>
+                    <th className="border-b border-slate-200 px-3 py-2">TOTAL</th>
+                    <th className="border-b border-slate-200 px-3 py-2">INSTRUMENT</th>
+                    <th className="border-b border-slate-200 px-3 py-2">MIC / DI</th>
+                    <th className="border-b border-slate-200 px-3 py-2">STAND</th>
+                    <th className="border-b border-slate-200 px-3 py-2">NOTES</th>
+                    <th className="border-b border-slate-200 px-3 py-2">CABLES</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visualInputRows.map((row) => (
+                    <tr key={`list-${row.order}:${row.assetId}:${row.x}:${row.y}`}>
+                      <td className="border-b border-slate-200 px-3 py-2">{row.order}</td>
+                      <td className="border-b border-slate-200 px-3 py-2">{row.instrument || row.item}</td>
+                      <td className="border-b border-slate-200 px-3 py-2">{row.mic}</td>
+                      <td className="border-b border-slate-200 px-3 py-2">{row.stand}</td>
+                      <td className="border-b border-slate-200 px-3 py-2">{row.notes}</td>
+                      <td className="border-b border-slate-200 px-3 py-2">{row.cables}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </section>
         </div>
 
+      {/* Mobile navigation + drawers */}
       <div className="md:hidden">
-        <button
-          type="button"
-          onClick={() => setIsSheetOpen((v) => !v)}
-          className="fixed bottom-4 left-1/2 z-40 -translate-x-1/2 rounded-full bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow"
-        >
-          {isSheetOpen ? 'Close Library' : 'Open Library'}
-        </button>
+        <div className="fixed bottom-4 left-4 right-4 z-50 grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              setIsListOpen(false)
+              setIsSheetOpen((v) => !v)
+            }}
+            className="rounded-full bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow"
+          >
+            {isSheetOpen ? 'Close Assets' : 'Add Assets'}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setIsSheetOpen(false)
+              setIsListOpen(true)
+            }}
+            className="rounded-full border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-900 shadow"
+          >
+            View List
+          </button>
+        </div>
 
+        {/* Add Assets bottom sheet */}
         <div
           className={
-            'fixed left-0 right-0 bottom-0 z-30 rounded-t-2xl border-t border-slate-200 bg-white transition-transform duration-200 ease-out ' +
-            (isSheetOpen ? 'translate-y-0' : 'translate-y-[70%]')
+            'fixed left-0 right-0 bottom-0 z-40 rounded-t-2xl border-t border-slate-200 bg-white transition-transform duration-200 ease-out ' +
+            (isSheetOpen ? 'translate-y-0' : 'translate-y-full')
           }
         >
-          <div className="mx-auto max-w-7xl px-4 pt-4 pb-6">
+          <div className="mx-auto max-w-7xl px-4 pt-4 pb-24">
+            <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-slate-200" />
             <div className="flex items-center justify-between">
               <div className="text-xs font-medium uppercase tracking-wide text-slate-500">Asset Library</div>
-              <div className="text-xs text-slate-500">Tap to add</div>
+              <button
+                type="button"
+                onClick={() => setIsSheetOpen(false)}
+                className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Close
+              </button>
             </div>
 
-            <div className="mt-3 max-h-[50vh] overflow-auto">
+            <div className="mt-3 max-h-[55vh] overflow-auto">
               <div className="pb-4">
                 <div className="flex flex-wrap gap-2">
                   {categories.map((c) => {
@@ -1421,25 +1533,82 @@ export default function StageBuilder() {
                 ) : null}
 
                 <div className="mt-4 grid grid-cols-4 gap-3">
-                  {activeSectionItems.map((a) => (
-                    <button
-                      key={a._id}
-                      type="button"
-                      onPointerDown={(ev) => {
-                        ev.preventDefault()
-                        mobileDragRef.current = { asset: a }
-                        setMobileDragPreview({ asset: a, x: ev.clientX, y: ev.clientY })
-                      }}
-                      className="rounded-xl border border-slate-200 bg-white p-2"
-                    >
-                      <img src={`/api/assets/${a._id}`} alt={a.name} className="h-12 w-full object-contain" />
-                    </button>
-                  ))}
+                  {isAssetsLoading
+                    ? Array.from({ length: 12 }).map((_, idx) => (
+                        <div
+                          key={`m-asset-skel-${idx}`}
+                          className="h-16 rounded-xl border border-slate-200 bg-slate-50 animate-pulse"
+                        />
+                      ))
+                    : activeSectionItems.map((a) => (
+                        <button
+                          key={a._id}
+                          type="button"
+                          onPointerDown={(ev) => {
+                            ev.preventDefault()
+                            mobileDragRef.current = { asset: a }
+                            setMobileDragPreview({ asset: a, x: ev.clientX, y: ev.clientY })
+                          }}
+                          className="rounded-xl border border-slate-200 bg-white p-2"
+                        >
+                          <LazyAssetThumb assetId={a._id} alt={a.name} className="h-12 w-full" imgClassName="h-full w-full object-contain" />
+                        </button>
+                      ))}
                 </div>
               </div>
             </div>
           </div>
         </div>
+
+        {/* View List full-screen overlay */}
+        {isListOpen ? (
+          <div className="fixed inset-0 z-[60] bg-white">
+            <div className="sticky top-0 z-10 border-b border-slate-200 bg-white">
+              <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
+                <div>
+                  <div className="text-sm font-semibold text-slate-900">Channel List</div>
+                  <div className="text-xs text-slate-500">{visualInputRows.length} items</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsListOpen(false)}
+                  className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+
+            <div className="mx-auto max-w-7xl px-4 py-4">
+              <div className="overflow-auto rounded-xl border border-slate-200">
+                <table className="w-full border-collapse text-sm">
+                  <thead className="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+                    <tr>
+                      <th className="border-b border-slate-200 px-3 py-2">TOTAL</th>
+                      <th className="border-b border-slate-200 px-3 py-2">INSTRUMENT</th>
+                      <th className="border-b border-slate-200 px-3 py-2">MIC / DI</th>
+                      <th className="border-b border-slate-200 px-3 py-2">STAND</th>
+                      <th className="border-b border-slate-200 px-3 py-2">NOTES</th>
+                      <th className="border-b border-slate-200 px-3 py-2">CABLES</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {visualInputRows.map((row) => (
+                      <tr key={`m-list-${row.order}:${row.assetId}:${row.x}:${row.y}`}>
+                        <td className="border-b border-slate-200 px-3 py-2">{row.order}</td>
+                        <td className="border-b border-slate-200 px-3 py-2">{row.instrument || row.item}</td>
+                        <td className="border-b border-slate-200 px-3 py-2">{row.mic}</td>
+                        <td className="border-b border-slate-200 px-3 py-2">{row.stand}</td>
+                        <td className="border-b border-slate-200 px-3 py-2">{row.notes}</td>
+                        <td className="border-b border-slate-200 px-3 py-2">{row.cables}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        ) : null}
       </div>
 
       </main>
@@ -1508,8 +1677,49 @@ function LibraryItem({ asset }) {
       className="cursor-grab rounded-xl border border-slate-200 bg-white p-2 active:cursor-grabbing"
       title="Drag to stage"
     >
-      <img src={`/api/assets/${asset._id}`} alt={asset.name} className="h-14 w-full object-contain" />
+      <LazyAssetThumb assetId={asset._id} alt={asset.name} className="h-14 w-full" imgClassName="h-full w-full object-contain" />
       <div className="mt-2 truncate text-xs font-medium text-slate-700">{asset.name}</div>
+    </div>
+  )
+}
+
+function LazyAssetThumb({ assetId, alt, className = '', imgClassName = '' }) {
+  const supportsIO = typeof window !== 'undefined' && 'IntersectionObserver' in window
+  const [ready, setReady] = useState(() => !supportsIO)
+  const hostRef = useRef(null)
+
+  useEffect(() => {
+    const el = hostRef.current
+    if (!el || ready) return
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        const entry = entries?.[0]
+        if (entry?.isIntersecting) {
+          setReady(true)
+          io.disconnect()
+        }
+      },
+      { rootMargin: '200px' }
+    )
+
+    io.observe(el)
+    return () => io.disconnect()
+  }, [ready])
+
+  return (
+    <div ref={hostRef} className={className}>
+      {ready ? (
+        <img
+          src={`/api/assets/${assetId}`}
+          alt={alt}
+          className={imgClassName}
+          loading="lazy"
+          decoding="async"
+        />
+      ) : (
+        <div className="h-full w-full rounded-md bg-slate-100 animate-pulse" aria-hidden="true" />
+      )}
     </div>
   )
 }

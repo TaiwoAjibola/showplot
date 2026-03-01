@@ -1,11 +1,21 @@
+import { Suspense, lazy } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import AppLayout from './layouts/AppLayout.jsx'
-import Feedback from './routes/Feedback.jsx'
-import PrivacyPolicy from './routes/PrivacyPolicy.jsx'
-import Profile from './routes/Profile.jsx'
 import StageBuilder from './routes/StageBuilder.jsx'
-import Terms from './routes/Terms.jsx'
-import Settings from './routes/Settings.jsx'
+
+const Feedback = lazy(() => import('./routes/Feedback.jsx'))
+const PrivacyPolicy = lazy(() => import('./routes/PrivacyPolicy.jsx'))
+const Profile = lazy(() => import('./routes/Profile.jsx'))
+const Terms = lazy(() => import('./routes/Terms.jsx'))
+const Settings = lazy(() => import('./routes/Settings.jsx'))
+
+function RouteFallback() {
+  return (
+    <div className="mx-auto w-full max-w-4xl rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-600">
+      Loading…
+    </div>
+  )
+}
 
 export default function App() {
   return (
@@ -16,7 +26,9 @@ export default function App() {
         path="/privacy"
         element={
           <AppLayout>
-            <PrivacyPolicy />
+            <Suspense fallback={<RouteFallback />}>
+              <PrivacyPolicy />
+            </Suspense>
           </AppLayout>
         }
       />
@@ -24,7 +36,9 @@ export default function App() {
         path="/terms"
         element={
           <AppLayout>
-            <Terms />
+            <Suspense fallback={<RouteFallback />}>
+              <Terms />
+            </Suspense>
           </AppLayout>
         }
       />
@@ -32,7 +46,9 @@ export default function App() {
         path="/settings"
         element={
           <AppLayout>
-            <Settings />
+            <Suspense fallback={<RouteFallback />}>
+              <Settings />
+            </Suspense>
           </AppLayout>
         }
       />
@@ -40,7 +56,9 @@ export default function App() {
         path="/profile"
         element={
           <AppLayout>
-            <Profile />
+            <Suspense fallback={<RouteFallback />}>
+              <Profile />
+            </Suspense>
           </AppLayout>
         }
       />
@@ -48,7 +66,9 @@ export default function App() {
         path="/feedback"
         element={
           <AppLayout>
-            <Feedback />
+            <Suspense fallback={<RouteFallback />}>
+              <Feedback />
+            </Suspense>
           </AppLayout>
         }
       />
