@@ -628,7 +628,33 @@ app.post('/api/feedback', requireAuth, async (req, res) => {
 
 app.get('/api/admin/stats', async (req, res) => {
   const totalPlots = await StagePlot.countDocuments({})
-  res.json({ totalPlots })
+  const totalUsers = await User.countDocuments({})
+  res.json({ totalPlots, totalUsers })
+})
+
+app.get('/api/admin/users', async (req, res) => {
+  const users = await User.find({})
+    .sort({ createdAt: -1 })
+    .select({ email: 1, name: 1, picture: 1, createdAt: 1, updatedAt: 1 })
+    .lean()
+
+  const plotCounts = await StagePlot.aggregate([
+    { $group: { _id: '$userId', count: { $sum: 1 } } },
+  ])
+
+  const countByUserId = new Map(plotCounts.map((r) => [String(r._id), Number(r.count) || 0]))
+
+  res.json(
+    users.map((u) => ({
+      _id: u._id,
+      email: u.email || '',
+      name: u.name || '',
+      picture: u.picture || '',
+      plotCount: countByUserId.get(String(u._id)) || 0,
+      createdAt: u.createdAt,
+      updatedAt: u.updatedAt,
+    }))
+  )
 })
 
 // Serve the built Vite app (production)

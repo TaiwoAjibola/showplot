@@ -48,6 +48,13 @@ const API = {
     }
     return res.json()
   },
+  listUsers: async () => {
+    const res = await fetch('/api/admin/users')
+    if (!res.ok) {
+      throw new Error(await API._readError(res, 'Failed to load users'))
+    }
+    return res.json()
+  },
   stats: async () => {
     const res = await fetch('/api/admin/stats')
     if (!res.ok) {
@@ -93,8 +100,9 @@ function classNames(...parts) {
 export default function AdminDashboard() {
   const fileInputRef = useRef(null)
   const [assets, setAssets] = useState([])
-  const [stats, setStats] = useState({ totalPlots: 0 })
+  const [stats, setStats] = useState({ totalPlots: 0, totalUsers: 0 })
   const [taxonomy, setTaxonomy] = useState({ categories: [] })
+  const [users, setUsers] = useState([])
   const [pendingFile, setPendingFile] = useState(null)
   const [name, setName] = useState('')
   const [category, setCategory] = useState('')
@@ -125,10 +133,11 @@ export default function AdminDashboard() {
   const canUpload = useMemo(() => Boolean(pendingFile && (name || pendingFile?.name)), [pendingFile, name])
 
   const refresh = async () => {
-    const [a, s, t] = await Promise.all([API.listAssets(), API.stats(), API.getTaxonomy()])
+    const [a, s, t, u] = await Promise.all([API.listAssets(), API.stats(), API.getTaxonomy(), API.listUsers()])
     setAssets(a)
     setStats(s)
     setTaxonomy(t)
+    setUsers(Array.isArray(u) ? u : [])
   }
 
   useEffect(() => {
@@ -186,6 +195,9 @@ export default function AdminDashboard() {
         <div className="rounded-xl border border-slate-200 bg-white p-4 md:p-6">
           <div className="text-xs font-medium uppercase tracking-wide text-slate-500">Total Plots</div>
           <div className="mt-2 text-3xl font-semibold tracking-tight">{stats.totalPlots}</div>
+
+          <div className="mt-4 text-xs font-medium uppercase tracking-wide text-slate-500">Total Users</div>
+          <div className="mt-2 text-3xl font-semibold tracking-tight">{stats.totalUsers || 0}</div>
         </div>
         <div className="md:col-span-2 rounded-xl border border-slate-200 bg-white p-4 md:p-6">
           <div className="flex items-start justify-between gap-4">
@@ -299,6 +311,57 @@ export default function AdminDashboard() {
               {error}
             </div>
           ) : null}
+        </div>
+      </section>
+
+      <section className="rounded-xl border border-slate-200 bg-white p-4 md:p-6">
+        <div className="flex items-baseline justify-between gap-4">
+          <div>
+            <div className="text-sm font-semibold">Users</div>
+            <div className="mt-1 text-sm text-slate-600">Read-only list of users who have signed in.</div>
+          </div>
+          <div className="text-xs font-medium uppercase tracking-wide text-slate-500">{users.length} users</div>
+        </div>
+
+        <div className="mt-4 overflow-auto rounded-xl border border-slate-200">
+          <table className="w-full border-collapse text-sm">
+            <thead className="bg-slate-50 text-left text-xs font-semibold text-slate-600">
+              <tr>
+                <th className="border-b border-slate-200 px-3 py-2">User</th>
+                <th className="border-b border-slate-200 px-3 py-2">Email</th>
+                <th className="border-b border-slate-200 px-3 py-2">Plots</th>
+                <th className="border-b border-slate-200 px-3 py-2">Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((u) => (
+                <tr key={u._id} className="hover:bg-slate-50">
+                  <td className="border-b border-slate-200 px-3 py-2">
+                    <div className="flex items-center gap-3">
+                      {u.picture ? (
+                        <img
+                          src={u.picture}
+                          alt=""
+                          className="h-8 w-8 rounded-full border border-slate-200"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <div className="h-8 w-8 rounded-full border border-slate-200 bg-slate-50" />
+                      )}
+                      <div className="min-w-0">
+                        <div className="truncate font-medium text-slate-900">{u.name || 'Unknown'}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="border-b border-slate-200 px-3 py-2 text-slate-700">{u.email || ''}</td>
+                  <td className="border-b border-slate-200 px-3 py-2 text-slate-700">{u.plotCount || 0}</td>
+                  <td className="border-b border-slate-200 px-3 py-2 text-slate-700">
+                    {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : ''}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </section>
 
