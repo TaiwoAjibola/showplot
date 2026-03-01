@@ -92,30 +92,39 @@ function detectPngHasAlpha(buffer) {
   return false
 }
 
+function parseCorsAllowedOrigins() {
+  const raw = process.env.CORS_ORIGIN
+  const trimmed = String(raw || '').trim()
+  if (!trimmed || trimmed === '*') return null
+  return trimmed
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+
 app.use(
   cors({
-    origin: (() => {
-      const raw = process.env.CORS_ORIGIN
-      if (!raw) return true
-      const trimmed = String(raw).trim()
-      if (!trimmed || trimmed === '*') return true
-
-      const allowed = trimmed
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean)
-
-      if (allowed.length <= 1) return allowed[0] || true
-
-      return (origin, callback) => {
-        if (!origin) return callback(null, true)
-        if (allowed.includes(origin)) return callback(null, true)
-        return callback(new Error('Not allowed by CORS'))
-      }
-    })(),
+    origin: (origin, callback) => {
+      const allowed = parseCorsAllowedOrigins()
+      if (!allowed) return callback(null, true)
+      if (!origin) return callback(null, true)
+      return callback(null, allowed.includes(origin))
+    },
     credentials: true,
   })
 )
+
+// Make disallowed origins a clear JSON 403 instead of a generic 500.
+app.use((req, res, next) => {
+  const allowed = parseCorsAllowedOrigins()
+  if (!allowed) return next()
+
+  const origin = req.headers?.origin
+  if (!origin) return next()
+
+  if (allowed.includes(origin)) return next()
+  return res.status(403).json({ error: 'Not allowed by CORS' })
+})
 
 const assetSchema = new mongoose.Schema(
   {

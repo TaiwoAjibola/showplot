@@ -26,6 +26,7 @@ In Google Cloud Console:
 - Create an OAuth 2.0 Client ID (Web application)
 - Add Authorized JavaScript origins:
 	- `http://localhost:5173`
+	- `https://showplot.vercel.app`
 - Add Authorized redirect URIs:
 	- (not required for Google Identity Services button/One Tap)
 
@@ -76,6 +77,9 @@ You will typically deploy:
 - **Start command**: `node server.js`
 - Set environment variables (see `.env.example`):
 	- `MONGODB_URI`, `MONGODB_DB`, `GOOGLE_CLIENT_ID`, `SESSION_SECRET`
+	- `CORS_ORIGIN` (comma-separated allowlist)
+		- Dev: `http://localhost:5173,http://localhost:5174`
+		- Prod (this repo's default Vercel domains): `https://showplot.vercel.app,https://showplot-admin.vercel.app`
 - Copy the deployed backend URL (example: `https://showplot-api.onrender.com`)
 
 ### 2) Deploy User app to Vercel
@@ -86,7 +90,9 @@ You will typically deploy:
 - **Output directory**: `dist`
 - Environment variables:
 	- `VITE_GOOGLE_CLIENT_ID`
-	- `BACKEND_ORIGIN` (the backend base URL from step 1)
+
+This repo proxies API calls by rewriting `/api/*` to the Render backend in `vercel.user.json`.
+If your backend URL differs, update the `destination` there.
 
 ### 3) Deploy Admin app to Vercel (separate project)
 
@@ -96,8 +102,10 @@ Create a second Vercel project pointing to the same repo, with:
 - **Build command**: `npm run build:admin`
 - **Output directory**: `dist-admin`
 - Environment variables:
-	- `VITE_GOOGLE_CLIENT_ID`
-	- `BACKEND_ORIGIN`
+	- `VITE_USER_APP_ORIGIN` (production user app origin, e.g. `https://showplot.vercel.app`)
+
+This repo proxies API calls by rewriting `/api/*` to the Render backend in `vercel.admin.json`.
+If your backend URL differs, update the `destination` there.
 
 ### Deploy using Vercel CLI (2 projects)
 
@@ -149,8 +157,8 @@ Paste your backend base URL when prompted.
 
 ### Notes
 
-- This repo includes a Vercel Serverless Function at `api/[...path].js` which proxies `/api/*` to your backend using `BACKEND_ORIGIN`.
-- For Google OAuth, add your Vercel URLs (user + admin) to **Authorized JavaScript origins** in Google Cloud Console.
+- API proxying is implemented via Vercel `rewrites` in `vercel.json`, `vercel.user.json`, and `vercel.admin.json`.
+- For Google OAuth, add your Vercel URL (user app) to **Authorized JavaScript origins** in Google Cloud Console.
 
 ## Notes
 
