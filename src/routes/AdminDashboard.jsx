@@ -14,7 +14,9 @@ const API = {
     return `${fallback}${hint}`
   },
   listAssets: async () => {
-    const res = await fetch('/api/admin/assets')
+    const res = await fetch('/api/admin/assets', {
+      credentials: 'include',
+    })
     if (!res.ok) {
       throw new Error(await API._readError(res, 'Failed to load assets'))
     }
@@ -24,6 +26,7 @@ const API = {
     const res = await fetch('/api/admin/assets', {
       method: 'POST',
       body: formData,
+      credentials: 'include',
     })
     if (!res.ok) {
       throw new Error(await API._readError(res, 'Upload failed'))
@@ -31,7 +34,10 @@ const API = {
     return res.json()
   },
   deleteAsset: async (assetId) => {
-    const res = await fetch(`/api/admin/assets/${assetId}`, { method: 'DELETE' })
+    const res = await fetch(`/api/admin/assets/${assetId}`, { 
+      method: 'DELETE',
+      credentials: 'include',
+    })
     if (!res.ok) {
       throw new Error(await API._readError(res, 'Delete failed'))
     }
@@ -42,6 +48,7 @@ const API = {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(patch),
+      credentials: 'include',
     })
     if (!res.ok) {
       throw new Error(await API._readError(res, 'Update failed'))

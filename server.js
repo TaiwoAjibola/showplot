@@ -392,7 +392,7 @@ async function upsertTaxonomyCategorySection(categoryRaw, sectionRaw) {
   await doc.save()
 }
 
-app.post('/api/admin/assets', upload.single('file'), async (req, res) => {
+app.post('/api/admin/assets', requireAuth, upload.single('file'), async (req, res) => {
   try {
     const { name = '', category = '', section = '' } = req.body || {}
     if (!req.file?.buffer) {
@@ -493,7 +493,7 @@ app.get('/api/admin/assets', async (req, res) => {
   res.json(assets)
 })
 
-app.patch('/api/admin/assets/:id', async (req, res) => {
+app.patch('/api/admin/assets/:id', requireAuth, async (req, res) => {
   const { id } = req.params
   const patch = {}
   if (typeof req.body?.name === 'string') patch.name = req.body.name
@@ -507,7 +507,7 @@ app.patch('/api/admin/assets/:id', async (req, res) => {
   res.json(updated)
 })
 
-app.delete('/api/admin/assets/:id', async (req, res) => {
+app.delete('/api/admin/assets/:id', requireAuth, async (req, res) => {
   const { id } = req.params
   const asset = await Asset.findById(id)
   if (!asset) return res.status(404).json({ error: 'Asset not found' })
