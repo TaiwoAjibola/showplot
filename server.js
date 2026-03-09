@@ -239,6 +239,16 @@ async function requireAuth(req, res, next) {
   next()
 }
 
+// middleware for admin-only endpoints (doesn't require DB user)
+function requireAdmin(req, res, next) {
+  const token = getSessionTokenFromRequest(req)
+  const payload = verifySessionToken(token)
+  if (!payload?.admin) {
+    return res.status(401).json({ error: 'Unauthorized' })
+  }
+  next()
+}
+
 app.use('/api', (req, res, next) => {
   if (!isDbReady()) {
     return res.status(503).json({
@@ -252,7 +262,14 @@ app.use('/api', (req, res, next) => {
 app.get('/api/me', async (req, res) => {
   const token = getSessionTokenFromRequest(req)
   const payload = verifySessionToken(token)
-  if (!payload?.uid) return res.json({ user: null })
+  if (!payload) return res.json({ user: null })
+
+  // admin login doesn't have uid but sets admin flag
+  if (payload.admin) {
+    return res.json({ user: { admin: true } })
+  }
+
+  if (!payload.uid) return res.json({ user: null })
 
   const user = await User.findById(payload.uid).lean()
   if (!user) {
@@ -268,6 +285,30 @@ app.get('/api/me', async (req, res) => {
       picture: user.picture,
     },
   })
+})
+
+// local/admin login support
+const ADMIN_USER = process.env.ADMIN_USER || 'admin'
+const ADMIN_PASS = process.env.ADMIN_PASS || 'change-me'
+
+app.post('/api/auth/local', async (req, res) => {
+  try {
+    if (!SESSION_SECRET) {
+      return res.status(500).json({ error: 'Missing SESSION_SECRET on server' })
+    }
+
+    const username = String(req.body?.username || '')
+    const password = String(req.body?.password || '')
+    if (username !== ADMIN_USER || password !== ADMIN_PASS) {
+      return res.status(401).json({ error: 'Invalid credentials' })
+    }
+
+    const token = jwt.sign({ admin: true }, SESSION_SECRET, { expiresIn: '7d' })
+    setSessionCookie(res, token)
+    return res.json({ user: { admin: true } })
+  } catch (err) {
+    res.status(500).json({ error: err?.message || 'Login failed' })
+  }
 })
 
 app.post('/api/auth/google', async (req, res) => {
@@ -392,7 +433,7 @@ async function upsertTaxonomyCategorySection(categoryRaw, sectionRaw) {
   await doc.save()
 }
 
-app.post('/api/admin/assets', requireAuth, upload.single('file'), async (req, res) => {
+app.post('/api/admin/assets', requireAdmin, upload.single('file'), async (req, res) => {
   try {
     const { name = '', category = '', section = '' } = req.body || {}
     if (!req.file?.buffer) {
@@ -493,7 +534,7 @@ app.get('/api/admin/assets', async (req, res) => {
   res.json(assets)
 })
 
-app.patch('/api/admin/assets/:id', requireAuth, async (req, res) => {
+app.patch('/api/admin/assets/:id', requireAdmin, async (req, res) => {
   const { id } = req.params
   const patch = {}
   if (typeof req.body?.name === 'string') patch.name = req.body.name
@@ -507,7 +548,7 @@ app.patch('/api/admin/assets/:id', requireAuth, async (req, res) => {
   res.json(updated)
 })
 
-app.delete('/api/admin/assets/:id', requireAuth, async (req, res) => {
+app.delete('/api/admin/assets/:id', requireAdmin, async (req, res) => {
   const { id } = req.params
   const asset = await Asset.findById(id)
   if (!asset) return res.status(404).json({ error: 'Asset not found' })

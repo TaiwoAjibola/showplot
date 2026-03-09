@@ -17,7 +17,11 @@ export default function AdminApp() {
   if (!auth.user) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
-        <SignIn title="Admin Sign In" subtitle="Sign in with Google to access the admin panel." />
+        <SignIn
+          mode="local"
+          title="Admin Sign In"
+          subtitle="Enter the admin username and password."
+        />
       </div>
     )
   }

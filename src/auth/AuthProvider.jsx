@@ -24,6 +24,16 @@ export function AuthProvider({ children }) {
     setUser(data?.user || null)
   }
 
+  const loginWithLocal = async (username, password) => {
+    setError('')
+    const data = await fetchJson('/api/auth/local', {
+      method: 'POST',
+      body: JSON.stringify({ username, password }),
+    })
+    setUser(data?.user || null)
+    return data?.user || null
+  }
+
   useEffect(() => {
     let alive = true
     const t = window.setTimeout(() => {
@@ -61,7 +71,7 @@ export function AuthProvider({ children }) {
   }
 
   const value = useMemo(
-    () => ({ user, isLoading, error, refresh, loginWithGoogleCredential, logout }),
+    () => ({ user, isLoading, error, refresh, loginWithGoogleCredential, loginWithLocal, logout }),
     [user, isLoading, error]
   )
 
